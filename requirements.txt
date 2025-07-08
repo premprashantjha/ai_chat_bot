@@ -1,6 +1,2 @@
 streamlit
-langchain
-langchain-community
-faiss-cpu
-tiktoken
-openai
+google-generativeai

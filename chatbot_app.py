@@ -1,38 +1,28 @@
 import streamlit as st
-from langchain_community.document_loaders import TextLoader
-from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import OllamaEmbeddings
-from langchain.text_splitter import CharacterTextSplitter
-from langchain.llms import Ollama
-from langchain.chains import RetrievalQA
+import google.generativeai as genai
+import os
 
+# Config
 st.set_page_config(page_title="Ask Prem's Portfolio", layout="wide")
+st.title("🤖 Ask Prem About His Projects")
 
-# Title
-st.title("🤖 Ask Me About My Projects – Prem Jha")
+# Load API key from environment or secrets
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# Upload resume text
-loader = TextLoader("prem_resume_projects.md")
-docs = loader.load()
+model = genai.GenerativeModel("gemini-pro")
 
-# Split text into chunks
-splitter = CharacterTextSplitter(chunk_size=800, chunk_overlap=100)
-chunks = splitter.split_documents(docs)
+# Sample context: paste from your resume
+context = """
+I'm Prem Jha, a Flutter Developer with 1.5+ years' experience. 
+I’ve worked on AI chat apps (DocuVerse using LangChain & Ollama), Fantasy Sports (Zoccer11 with SSE), 
+E-commerce (Easyar), and Python APIs (OneTouchPost). I'm skilled in Flutter, Firebase, Python, APIs, SSE, and LangChain.
+"""
 
-# Embed chunks
-embeddings = OllamaEmbeddings(model="mistral")
-vectorstore = FAISS.from_documents(chunks, embeddings)
+# Input
+user_input = st.text_input("Ask about my work, e.g., 'What did you build in Zoccer11?'")
 
-# Create retrieval-based QA chain
-retriever = vectorstore.as_retriever()
-llm = Ollama(model="mistral")
-
-qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
-
-# Chat Input
-query = st.text_input("Ask something like: 'Tell me about Zoccer11' or 'What AI tools have you used?'")
-
-if query:
+# Chat logic
+if user_input:
     with st.spinner("Thinking..."):
-        response = qa_chain.run(query)
-        st.success(response)
+        response = model.generate_content(f"{context}\n\nQuestion: {user_input}")
+        st.success(response.text)
